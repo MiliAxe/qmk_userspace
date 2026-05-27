@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "keyboards/crkbd/config.h"
+
 #define XXX KC_NO
 #define KCR KC_RIGHT
 #define KCL KC_LEFT
