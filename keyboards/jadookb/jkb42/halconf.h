@@ -3,7 +3,7 @@
 
 #pragma once
 #include_next <halconf.h>
-// #define HAL_USE_SPI TRUE
+#define HAL_USE_SPI TRUE
 #define HAL_USE_PWM FALSE
 
 

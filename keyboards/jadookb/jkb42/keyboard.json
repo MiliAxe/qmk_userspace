@@ -136,7 +136,7 @@
         "mousekey": true,
         "nkro": true,
         "pointing_device": false,
-        "quantum_painter": false,
+        "quantum_painter": true,
         "rgb_matrix": true
     },
     "ws2812": {
