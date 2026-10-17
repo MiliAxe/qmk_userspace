@@ -8,7 +8,6 @@
 #include QMK_KEYBOARD_H
 
 painter_device_t lcd;
-static deferred_token my_anim;
 
 void keyboard_post_init_kb(void) {
 #if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
@@ -38,7 +37,7 @@ void keyboard_post_init_kb(void) {
     qp_rect(lcd, 0, 0, LCD_WIDTH, LCD_HEIGHT, HSV_BLACK, true);
     painter_image_handle_t logo_image = qp_load_image_mem(gfx_jakeoptimized);
     if (logo_image != NULL) {
-        my_anim = qp_animate(lcd, 0, 0, logo_image);
+        qp_drawimage(lcd, 0, 0, logo_image);
     }
 
     qp_flush(lcd);
