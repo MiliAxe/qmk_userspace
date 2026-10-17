@@ -11,6 +11,7 @@
 
 /* any side can be master by default, enable split sync to support it */
 #define EE_HANDS
+#define SPLIT_LAYER_STATE_ENABLE
 
 // #define BILATERAL_COMBINATIONS
 
@@ -36,7 +37,7 @@
 // QP Configuration
 #define QUANTUM_PAINTER_SUPPORTS_NATIVE_COLORS TRUE
 #define ST7735_NO_AUTOMATIC_VIEWPORT_OFFSETS
-#define QUANTUM_PAINTER_NUM_FONTS 2
+#define QUANTUM_PAINTER_NUM_FONTS 4
 
 // Timeout configuration
 #define QUANTUM_PAINTER_DISPLAY_TIMEOUT 120000

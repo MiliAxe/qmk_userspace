@@ -87,15 +87,18 @@ static void update_layer_card(uint8_t layer) {
     char layer_num_str[16];
     snprintf(layer_num_str, sizeof(layer_num_str), "LAYER %u", (unsigned int)layer);
     int16_t num_w = qp_textwidth(font_sm, layer_num_str);
+    if (num_w <= 0) num_w = 40;
     int16_t num_x = (128 - num_w) / 2;
     if (num_x < 8) num_x = 8;
     qp_drawtext_recolor(lcd, num_x, 38, font_sm, layer_num_str, 0, 0, 180, 0, 0, 0);
 
     // Big Layer Name in center of card (e.g. "NAV")
-    int16_t text_w = qp_textwidth(font_lg, info->name);
+    painter_font_handle_t title_font = font_lg ? font_lg : font_sm;
+    int16_t text_w = qp_textwidth(title_font, info->name);
+    if (text_w <= 0) text_w = 40;
     int16_t text_x = (128 - text_w) / 2;
     if (text_x < 8) text_x = 8;
-    qp_drawtext_recolor(lcd, text_x, 54, font_lg, info->name, info->hue, info->sat, info->val, 0, 0, 0);
+    qp_drawtext_recolor(lcd, text_x, 54, title_font, info->name, info->hue, info->sat, info->val, 0, 0, 0);
 }
 
 #ifdef WPM_ENABLE
@@ -169,14 +172,37 @@ void keyboard_post_init_kb(void) {
 
     // Initial draw
     draw_header();
-    update_caps_indicator(host_keyboard_led_state().caps_lock);
-    update_layer_card(get_highest_layer(layer_state));
+    last_caps = host_keyboard_led_state().caps_lock;
+    update_caps_indicator(last_caps);
+    last_layer = get_highest_layer(layer_state | default_layer_state);
+    update_layer_card(last_layer);
 #ifdef WPM_ENABLE
-    update_wpm_gauge(get_current_wpm());
+    last_wpm = get_current_wpm();
+    update_wpm_gauge(last_wpm);
 #endif
     qp_flush(lcd);
 
     keyboard_post_init_user();
+}
+
+layer_state_t layer_state_set_kb(layer_state_t state) {
+    uint8_t next_layer = get_highest_layer(state | default_layer_state);
+    if (lcd != NULL && font_sm != NULL && next_layer != last_layer) {
+        last_layer = next_layer;
+        update_layer_card(next_layer);
+        qp_flush(lcd);
+    }
+    return layer_state_set_user(state);
+}
+
+layer_state_t default_layer_state_set_kb(layer_state_t state) {
+    uint8_t next_layer = get_highest_layer(layer_state | state);
+    if (lcd != NULL && font_sm != NULL && next_layer != last_layer) {
+        last_layer = next_layer;
+        update_layer_card(next_layer);
+        qp_flush(lcd);
+    }
+    return default_layer_state_set_user(state);
 }
 
 void housekeeping_task_kb(void) {
@@ -186,8 +212,8 @@ void housekeeping_task_kb(void) {
 
     bool need_flush = false;
 
-    // 1. Layer update (instant response on thumb key press)
-    uint8_t current_layer = get_highest_layer(layer_state);
+    // 1. Layer update (instant response on thumb key press / split sync on slave)
+    uint8_t current_layer = get_highest_layer(layer_state | default_layer_state);
     if (current_layer != last_layer) {
         last_layer = current_layer;
         update_layer_card(current_layer);
