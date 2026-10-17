@@ -122,7 +122,8 @@
             "sync": {
                 "indicators": true,
                 "matrix_state": true,
-                "modifiers": true
+                "modifiers": true,
+                "wpm": true
             }
         }
     },
@@ -137,7 +138,8 @@
         "nkro": true,
         "pointing_device": false,
         "quantum_painter": true,
-        "rgb_matrix": true
+        "rgb_matrix": true,
+        "wpm": true
     },
     "ws2812": {
         "driver": "vendor",
