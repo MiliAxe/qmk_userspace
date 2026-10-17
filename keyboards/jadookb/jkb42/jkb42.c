@@ -62,9 +62,13 @@ static const mod_pill_t mod_pills[4] = {
     { "GUI", MOD_MASK_GUI,   96, 122,  85 }, // Green
 };
 
+#ifndef DISPLAY_HEADER_TEXT
+#    define DISPLAY_HEADER_TEXT "Mili's KB"
+#endif
+
 static void draw_header(void) {
-    // Header title "JKB42"
-    qp_drawtext_recolor(lcd, 8, 6, font_sm, "JKB42", 0, 0, 200, 0, 0, 0);
+    // Header title
+    qp_drawtext_recolor(lcd, 8, 6, font_sm, DISPLAY_HEADER_TEXT, 0, 0, 200, 0, 0, 0);
 
     // Separator line under header
     qp_line(lcd, 6, 24, 121, 24, 0, 0, 60);

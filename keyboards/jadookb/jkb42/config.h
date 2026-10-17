@@ -43,6 +43,11 @@
 #define QUANTUM_PAINTER_DISPLAY_TIMEOUT 120000
 #define LIGHTS_TIMEOUT QUANTUM_PAINTER_DISPLAY_TIMEOUT
 
+// Display Customization
+#ifndef DISPLAY_HEADER_TEXT
+#    define DISPLAY_HEADER_TEXT "Mili's KB"
+#endif
+
 // Legacy RGB Matrix keycode aliases
 #ifndef RGB_TOG
 #    define RGB_TOG RM_TOGG
