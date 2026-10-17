@@ -1,0 +1,7 @@
+USER_NAME=manna-harbour_miryoku
+MIRYOKU_ALPHAS=QWERTY
+MIRYOKU_EXTRA=QWERTY
+MIRYOKU_TAP=QWERTY
+MIRYOKU_NAV=VI
+
+include $(QMK_USERSPACE)/keyboards/jadookb/jkb42/rules.mk
