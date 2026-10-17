@@ -11,9 +11,10 @@
 
 /* any side can be master by default, enable split sync to support it */
 #define EE_HANDS
-
-// #define BILATERAL_COMBINATIONS
-
+// Home Row Mods optimizations: Instant roll resolution & zero-lag typing
+#define CHORDAL_HOLD
+#define PERMISSIVE_HOLD
+#define FLOW_TAP_TERM 150
 // SPI pins
 #define SPI_DRIVER SPID1
 #define SPI_SCK_PIN GP10

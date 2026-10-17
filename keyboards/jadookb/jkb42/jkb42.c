@@ -394,3 +394,12 @@ void suspend_wakeup_init_user(void) {
 #endif
     rgb_matrix_set_suspend_state(false);
 }
+
+#ifdef CHORDAL_HOLD
+char chordal_hold_handedness(keypos_t key) {
+    if (key.row == 3 || key.row == 7) {
+        return '*'; // Thumb clusters can chord with any hand
+    }
+    return key.row < 4 ? 'L' : 'R';
+}
+#endif
