@@ -288,6 +288,37 @@ void caps_word_set_user(bool active) {
 }
 #endif
 
+bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
+    if (keycode == CW_TOGG) {
+        if (record->event.pressed) {
+            uint8_t mods = get_mods() | get_weak_mods();
+#ifndef NO_ACTION_ONESHOT
+            mods |= get_oneshot_mods();
+#endif
+            static uint16_t last_cw_time = 0;
+            bool is_double_tap = (timer_elapsed(last_cw_time) < 350);
+            last_cw_time = timer_read();
+
+            if ((mods & MOD_MASK_SHIFT) || is_double_tap) {
+                // Shift held OR double-tapped -> Toggle Full Caps Lock!
+                uint8_t real_mods = get_mods();
+                del_mods(MOD_MASK_SHIFT);
+                send_keyboard_report();
+                tap_code(KC_CAPS);
+                set_mods(real_mods);
+                send_keyboard_report();
+#if defined(CAPS_WORD_ENABLE)
+                if (is_caps_word_on()) {
+                    caps_word_off();
+                }
+#endif
+                return false;
+            }
+        }
+    }
+    return process_record_user(keycode, record);
+}
+
 void housekeeping_task_kb(void) {
     if (lcd == NULL || font_sm == NULL) {
         return;
