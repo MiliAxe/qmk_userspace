@@ -11,7 +11,6 @@
 
 /* any side can be master by default, enable split sync to support it */
 #define EE_HANDS
-#define SPLIT_LAYER_STATE_ENABLE
 
 // #define BILATERAL_COMBINATIONS
 

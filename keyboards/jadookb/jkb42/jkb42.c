@@ -12,14 +12,19 @@
 #    include "wpm.h"
 #endif
 
+#if defined(CAPS_WORD_ENABLE)
+#    include "caps_word.h"
+#endif
+
 painter_device_t lcd;
 static painter_font_handle_t font_sm = NULL;
 static painter_font_handle_t font_lg = NULL;
 
-static uint8_t  last_layer    = 255;
-static bool     last_caps     = false;
-static uint8_t  last_wpm      = 255;
-static uint32_t last_wpm_time = 0;
+static uint8_t  last_layer      = 255;
+static uint8_t  last_lock_state = 255; // 0: None, 1: Caps Word, 2: Caps Lock
+static uint8_t  last_mods       = 255;
+static uint8_t  last_wpm        = 255;
+static uint32_t last_wpm_time   = 0;
 
 typedef struct {
     const char *name;
@@ -42,28 +47,47 @@ static const layer_info_t layer_info[] = {
     [9] = { "FUN",     21, 255, 255 }, // Orange
 };
 
+typedef struct {
+    const char *label;
+    uint8_t     mask;
+    uint16_t    x0;
+    uint16_t    x1;
+    uint8_t     hue;
+} mod_pill_t;
+
+static const mod_pill_t mod_pills[4] = {
+    { "SFT", MOD_MASK_SHIFT,  6,  32,  32 }, // Amber Gold
+    { "CTL", MOD_MASK_CTRL,  36,  62, 128 }, // Cyan
+    { "ALT", MOD_MASK_ALT,   66,  92, 195 }, // Purple / Magenta
+    { "GUI", MOD_MASK_GUI,   96, 122,  85 }, // Green
+};
+
 static void draw_header(void) {
     // Header title "JKB42"
-    qp_drawtext_recolor(lcd, 8, 8, font_sm, "JKB42", 0, 0, 200, 0, 0, 0);
+    qp_drawtext_recolor(lcd, 8, 6, font_sm, "JKB42", 0, 0, 200, 0, 0, 0);
 
     // Separator line under header
-    qp_line(lcd, 6, 26, 121, 26, 0, 0, 60);
+    qp_line(lcd, 6, 24, 121, 24, 0, 0, 60);
 
     // Separator line above footer
-    qp_line(lcd, 6, 84, 121, 84, 0, 0, 60);
+    qp_line(lcd, 6, 94, 121, 94, 0, 0, 60);
 
     // Footer label "SPEED"
-    qp_drawtext_recolor(lcd, 8, 90, font_sm, "SPEED", 0, 0, 150, 0, 0, 0);
+    qp_drawtext_recolor(lcd, 8, 98, font_sm, "SPEED", 0, 0, 150, 0, 0, 0);
 }
 
-static void update_caps_indicator(bool caps) {
-    if (caps) {
+static void update_lock_indicator(uint8_t lock_state) {
+    if (lock_state == 2) {
         // Red badge with "CAPS" in white
-        qp_rect(lcd, 82, 6, 120, 22, 0, 255, 255, true);
-        qp_drawtext_recolor(lcd, 88, 7, font_sm, "CAPS", 0, 0, 255, 0, 255, 255);
+        qp_rect(lcd, 82, 5, 122, 21, 0, 255, 255, true);
+        qp_drawtext_recolor(lcd, 88, 6, font_sm, "CAPS", 0, 0, 255, 0, 255, 255);
+    } else if (lock_state == 1) {
+        // Amber badge with "WORD" in black
+        qp_rect(lcd, 82, 5, 122, 21, 32, 255, 255, true);
+        qp_drawtext_recolor(lcd, 88, 6, font_sm, "WORD", 0, 0, 0, 32, 255, 255);
     } else {
-        // Clear caps area
-        qp_rect(lcd, 80, 5, 122, 24, 0, 0, 0, true);
+        // Clear lock indicator area
+        qp_rect(lcd, 80, 5, 122, 22, 0, 0, 0, true);
     }
 }
 
@@ -76,12 +100,12 @@ static void update_layer_card(uint8_t layer) {
         info = &unknown;
     }
 
-    // Clear Layer Card area
-    qp_rect(lcd, 6, 32, 121, 80, 0, 0, 0, true);
+    // Clear Layer Card area (height 45px)
+    qp_rect(lcd, 6, 28, 121, 72, 0, 0, 0, true);
 
     // Colored accent border around layer card
-    qp_rect(lcd, 6, 32, 121, 80, info->hue, info->sat, info->val, false);
-    qp_rect(lcd, 7, 33, 120, 79, info->hue, info->sat, info->val, false);
+    qp_rect(lcd, 6, 28, 121, 72, info->hue, info->sat, info->val, false);
+    qp_rect(lcd, 7, 29, 120, 71, info->hue, info->sat, info->val, false);
 
     // Layer badge label inside card (e.g. "LAYER 4")
     char layer_num_str[16];
@@ -90,7 +114,7 @@ static void update_layer_card(uint8_t layer) {
     if (num_w <= 0) num_w = 40;
     int16_t num_x = (128 - num_w) / 2;
     if (num_x < 8) num_x = 8;
-    qp_drawtext_recolor(lcd, num_x, 38, font_sm, layer_num_str, 0, 0, 180, 0, 0, 0);
+    qp_drawtext_recolor(lcd, num_x, 32, font_sm, layer_num_str, 0, 0, 180, 0, 0, 0);
 
     // Big Layer Name in center of card (e.g. "NAV")
     painter_font_handle_t title_font = font_lg ? font_lg : font_sm;
@@ -98,7 +122,33 @@ static void update_layer_card(uint8_t layer) {
     if (text_w <= 0) text_w = 40;
     int16_t text_x = (128 - text_w) / 2;
     if (text_x < 8) text_x = 8;
-    qp_drawtext_recolor(lcd, text_x, 54, title_font, info->name, info->hue, info->sat, info->val, 0, 0, 0);
+    qp_drawtext_recolor(lcd, text_x, 48, title_font, info->name, info->hue, info->sat, info->val, 0, 0, 0);
+}
+
+static void update_modifier_pills(uint8_t mods) {
+    const uint16_t y0 = 76;
+    const uint16_t y1 = 90;
+
+    for (uint8_t i = 0; i < 4; i++) {
+        const mod_pill_t *p = &mod_pills[i];
+        bool is_active = (mods & p->mask) != 0;
+
+        int16_t tw = qp_textwidth(font_sm, p->label);
+        if (tw <= 0) tw = 15;
+        int16_t tx = p->x0 + ((p->x1 - p->x0 + 1) - tw) / 2;
+        if (tx < p->x0 + 1) tx = p->x0 + 1;
+
+        if (is_active) {
+            // Active: Solid colored pill with black text
+            qp_rect(lcd, p->x0, y0, p->x1, y1, p->hue, 255, 255, true);
+            qp_drawtext_recolor(lcd, tx, y0 + 1, font_sm, p->label, 0, 0, 0, p->hue, 255, 255);
+        } else {
+            // Inactive: Dark frame, dim text on black
+            qp_rect(lcd, p->x0, y0, p->x1, y1, 0, 0, 50, false);
+            qp_rect(lcd, p->x0 + 1, y0 + 1, p->x1 - 1, y1 - 1, 0, 0, 0, true);
+            qp_drawtext_recolor(lcd, tx, y0 + 1, font_sm, p->label, 0, 0, 90, 0, 0, 0);
+        }
+    }
 }
 
 #ifdef WPM_ENABLE
@@ -106,12 +156,12 @@ static void update_wpm_gauge(uint8_t wpm) {
     // Format WPM string
     char wpm_str[16];
     snprintf(wpm_str, sizeof(wpm_str), "%3u WPM", (unsigned int)wpm);
-    qp_drawtext_recolor(lcd, 72, 90, font_sm, wpm_str, 0, 0, 255, 0, 0, 0);
+    qp_drawtext_recolor(lcd, 72, 98, font_sm, wpm_str, 0, 0, 255, 0, 0, 0);
 
     const uint16_t bar_x0  = 8;
-    const uint16_t bar_y0  = 108;
+    const uint16_t bar_y0  = 113;
     const uint16_t bar_x1  = 119;
-    const uint16_t bar_y1  = 118;
+    const uint16_t bar_y1  = 123;
     const uint16_t max_wpm = 120;
 
     // Progress bar frame
@@ -172,10 +222,27 @@ void keyboard_post_init_kb(void) {
 
     // Initial draw
     draw_header();
-    last_caps = host_keyboard_led_state().caps_lock;
-    update_caps_indicator(last_caps);
+
+    last_lock_state = 0;
+    if (host_keyboard_led_state().caps_lock) {
+        last_lock_state = 2;
+    }
+#if defined(CAPS_WORD_ENABLE)
+    else if (is_caps_word_on()) {
+        last_lock_state = 1;
+    }
+#endif
+    update_lock_indicator(last_lock_state);
+
     last_layer = get_highest_layer(layer_state | default_layer_state);
     update_layer_card(last_layer);
+
+    last_mods = get_mods() | get_weak_mods();
+#ifndef NO_ACTION_ONESHOT
+    last_mods |= get_oneshot_mods();
+#endif
+    update_modifier_pills(last_mods);
+
 #ifdef WPM_ENABLE
     last_wpm = get_current_wpm();
     update_wpm_gauge(last_wpm);
@@ -205,6 +272,22 @@ layer_state_t default_layer_state_set_kb(layer_state_t state) {
     return default_layer_state_set_user(state);
 }
 
+#if defined(CAPS_WORD_ENABLE)
+void caps_word_set_user(bool active) {
+    uint8_t current_lock = 0;
+    if (host_keyboard_led_state().caps_lock) {
+        current_lock = 2;
+    } else if (active) {
+        current_lock = 1;
+    }
+    if (lcd != NULL && font_sm != NULL && current_lock != last_lock_state) {
+        last_lock_state = current_lock;
+        update_lock_indicator(current_lock);
+        qp_flush(lcd);
+    }
+}
+#endif
+
 void housekeeping_task_kb(void) {
     if (lcd == NULL || font_sm == NULL) {
         return;
@@ -220,16 +303,35 @@ void housekeeping_task_kb(void) {
         need_flush = true;
     }
 
-    // 2. Caps lock update
-    bool current_caps = host_keyboard_led_state().caps_lock;
-    if (current_caps != last_caps) {
-        last_caps = current_caps;
-        update_caps_indicator(current_caps);
+    // 2. Lock state update (Caps Lock / Caps Word)
+    uint8_t current_lock = 0;
+    if (host_keyboard_led_state().caps_lock) {
+        current_lock = 2;
+    }
+#if defined(CAPS_WORD_ENABLE)
+    else if (is_caps_word_on()) {
+        current_lock = 1;
+    }
+#endif
+    if (current_lock != last_lock_state) {
+        last_lock_state = current_lock;
+        update_lock_indicator(current_lock);
+        need_flush = true;
+    }
+
+    // 3. Modifier pills update
+    uint8_t current_mods = get_mods() | get_weak_mods();
+#ifndef NO_ACTION_ONESHOT
+    current_mods |= get_oneshot_mods();
+#endif
+    if (current_mods != last_mods) {
+        last_mods = current_mods;
+        update_modifier_pills(current_mods);
         need_flush = true;
     }
 
 #ifdef WPM_ENABLE
-    // 3. WPM update (throttled to at most once per 100ms)
+    // 4. WPM update (throttled to at most once per 100ms)
     if (timer_elapsed32(last_wpm_time) >= 100) {
         last_wpm_time = timer_read32();
         uint8_t current_wpm = get_current_wpm();
