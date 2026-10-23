@@ -328,6 +328,33 @@ void housekeeping_task_kb(void) {
         return;
     }
 
+#if defined(QUANTUM_PAINTER_DISPLAY_TIMEOUT) && (QUANTUM_PAINTER_DISPLAY_TIMEOUT > 0)
+    bool is_idle = last_input_activity_elapsed() >= QUANTUM_PAINTER_DISPLAY_TIMEOUT;
+    static bool display_is_sleeping = false;
+
+    if (is_idle && !display_is_sleeping) {
+        display_is_sleeping = true;
+#    if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
+        gpio_write_pin_low(LCD_BLK_PIN);
+#    endif
+    } else if (!is_idle && display_is_sleeping) {
+        display_is_sleeping = false;
+#    if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
+        gpio_write_pin_high(LCD_BLK_PIN);
+#    endif
+        // Invalidate cached states to force full screen refresh on wake
+        draw_header();
+        last_layer      = 255;
+        last_lock_state = 255;
+        last_mods       = 255;
+        last_wpm        = 255;
+    }
+
+    if (display_is_sleeping) {
+        return;
+    }
+#endif
+
     bool need_flush = false;
 
     // 1. Layer update (instant response on thumb key press / split sync on slave)
@@ -383,20 +410,22 @@ void housekeeping_task_kb(void) {
     }
 }
 
-void suspend_power_down_user(void) {
+void suspend_power_down_kb(void) {
     rgb_matrix_set_suspend_state(true);
 #if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
     gpio_write_pin_low(LCD_BLK_PIN);
 #endif
     qp_power(lcd, false);
+    suspend_power_down_user();
 }
 
-void suspend_wakeup_init_user(void) {
+void suspend_wakeup_init_kb(void) {
     qp_power(lcd, true);
 #if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
     gpio_write_pin_high(LCD_BLK_PIN);
 #endif
     rgb_matrix_set_suspend_state(false);
+    suspend_wakeup_init_user();
 }
 
 #ifdef CHORDAL_HOLD
