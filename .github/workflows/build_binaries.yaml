@@ -12,6 +12,9 @@ jobs:
     with:
       qmk_repo: qmk/qmk_firmware
       qmk_ref: master
+      preparation_command: |
+        mkdir -p qmk_firmware/keyboards/jadookb
+        ln -sf "$GITHUB_WORKSPACE/keyboards/jadookb/jkb42" qmk_firmware/keyboards/jadookb/jkb42
 
   publish:
     name: 'QMK Userspace Publish'

@@ -171,14 +171,24 @@ Pre-compiled firmware binaries are automatically built by GitHub Actions and ava
    ```bash
    qmk config user.overlay_dir="$(realpath .)"
    ```
-3. Compile the firmware:
+3. Link the out-of-tree `jkb42` hardware definition into your QMK tree:
+   ```bash
+   QMK_DIR="$(qmk config user.qmk_home | cut -d= -f2 | cut -d' ' -f1)"
+   mkdir -p "$QMK_DIR/keyboards/jadookb"
+   ln -sf "$(realpath keyboards/jadookb/jkb42)" "$QMK_DIR/keyboards/jadookb/jkb42"
+   ```
+4. Compile the firmware:
    ```bash
    qmk compile -kb jadookb/jkb42 -km miryoku_split_3x6_3_ex2
+   ```
+   Or compile all userspace targets:
+   ```bash
+   qmk userspace-compile
    ```
 
 ### Using GitHub Actions (Cloud CI)
 
-This repository includes [`.github/workflows/build_binaries.yaml`](.github/workflows/build_binaries.yaml). Every time you push changes to GitHub, GitHub Actions will compile the firmware in the cloud and automatically create a release with the compiled `.uf2` file attached.
+This repository includes [`.github/workflows/build_binaries.yaml`](.github/workflows/build_binaries.yaml). In GitHub Actions, the workflow automatically overlays the keyboard definition and compiles firmware on every push, publishing the `.uf2` binary under Releases with zero manual configuration.
 
 ---
 
