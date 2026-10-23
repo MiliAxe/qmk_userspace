@@ -4,6 +4,7 @@
 #include "qp_comms.h"
 #include "qp_st77xx_opcodes.h"
 #include "quantum.h"
+#include "print.h"
 #include "fonts/thintel15.qff.h"
 #include "fonts/robotomono20.qff.h"
 #include QMK_KEYBOARD_H
@@ -300,6 +301,7 @@ bool is_display_stealth_mode(void) {
 
 void display_stealth_toggle(void) {
     display_stealth_mode = !display_stealth_mode;
+    uprintf("TOGGLE STEALTH: new_state=%d\n", display_stealth_mode);
     if (display_stealth_mode) {
 #if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
         gpio_write_pin_low(LCD_BLK_PIN);
@@ -319,6 +321,13 @@ void display_stealth_toggle(void) {
 }
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
+    uprintf("KEY: pr=%d r=%d c=%d kc=0x%04x L=%d\n",
+            record->event.pressed,
+            record->event.key.row,
+            record->event.key.col,
+            keycode,
+            get_highest_layer(layer_state));
+
     if (keycode == OU_AUTO) {
         if (record->event.pressed) {
             display_stealth_toggle();

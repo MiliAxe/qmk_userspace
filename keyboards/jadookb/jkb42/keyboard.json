@@ -132,7 +132,7 @@
     "features": {
         "backlight": false,
         "bootmagic": true,
-        "console": false,
+        "console": true,
         "encoder": false,
         "extrakey": true,
         "mousekey": true,
