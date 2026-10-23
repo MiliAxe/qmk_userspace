@@ -303,12 +303,27 @@ void display_stealth_toggle(void) {
     display_stealth_mode = !display_stealth_mode;
     uprintf("TOGGLE STEALTH: new_state=%d\n", display_stealth_mode);
     if (display_stealth_mode) {
+        // 1. Physically paint the entire screen black
+        qp_rect(lcd, 0, 0, 127, 127, 0, 0, 0, true);
+        qp_flush(lcd);
+
+        // 2. Put ST7735 into sleep mode
+        qp_comms_start(lcd);
+        qp_comms_command(lcd, ST77XX_CMD_DISPLAY_OFF);
+        qp_comms_command(lcd, ST77XX_CMD_SLEEP_ON);
+        qp_comms_stop(lcd);
+
+        // 3. Cut backlight
 #if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
         gpio_write_pin_low(LCD_BLK_PIN);
 #endif
-        qp_power(lcd, false);
     } else {
-        qp_power(lcd, true);
+        // Wake up ST7735
+        qp_comms_start(lcd);
+        qp_comms_command(lcd, ST77XX_CMD_SLEEP_OFF);
+        qp_comms_command(lcd, ST77XX_CMD_DISPLAY_ON);
+        qp_comms_stop(lcd);
+
 #if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
         gpio_write_pin_high(LCD_BLK_PIN);
 #endif
@@ -317,6 +332,8 @@ void display_stealth_toggle(void) {
         last_lock_state = 255;
         last_mods       = 255;
         last_wpm        = 255;
+        update_layer_card(get_highest_layer(layer_state | default_layer_state));
+        qp_flush(lcd);
     }
 }
 
@@ -328,7 +345,8 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             keycode,
             get_highest_layer(layer_state));
 
-    if (keycode == OU_AUTO) {
+    // Display toggle on OU_AUTO (slash key) OR physical N key (row 6, col 5) while on Media layer
+    if (keycode == OU_AUTO || (record->event.key.row == 6 && record->event.key.col == 5 && get_highest_layer(layer_state) == 6)) {
         if (record->event.pressed) {
             display_stealth_toggle();
         }
