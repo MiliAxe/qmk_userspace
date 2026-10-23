@@ -11,6 +11,8 @@
 
 /* any side can be master by default, enable split sync to support it */
 #define EE_HANDS
+#define SPLIT_TRANSACTION_IDS_KB RPC_ID_DISPLAY_SYNC
+#define SPLIT_ACTIVITY_ENABLE
 // Home Row Mods optimizations: Instant roll resolution & zero-lag typing
 #define CHORDAL_HOLD
 #define PERMISSIVE_HOLD

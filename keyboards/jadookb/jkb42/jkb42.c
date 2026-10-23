@@ -5,6 +5,7 @@
 #include "qp_st77xx_opcodes.h"
 #include "quantum.h"
 #include "print.h"
+#include "transactions.h"
 #include "fonts/thintel15.qff.h"
 #include "fonts/robotomono20.qff.h"
 #include QMK_KEYBOARD_H
@@ -26,7 +27,19 @@ static uint8_t  last_lock_state = 255; // 0: None, 1: Caps Word, 2: Caps Lock
 static uint8_t  last_mods       = 255;
 static uint8_t  last_wpm        = 255;
 static uint32_t last_wpm_time   = 0;
-static bool     display_stealth_mode = false;
+static bool     display_stealth_mode       = false;
+static bool     master_stealth_sync_needed = false;
+static bool     slave_stealth_dirty        = false;
+
+void display_sync_slave_handler(uint8_t initiator2target_buffer_size, const void *initiator2target_buffer, uint8_t target2initiator_buffer_size, void *target2initiator_buffer) {
+    if (initiator2target_buffer_size == sizeof(bool)) {
+        bool new_mode = *(const bool *)initiator2target_buffer;
+        if (new_mode != display_stealth_mode) {
+            display_stealth_mode = new_mode;
+            slave_stealth_dirty  = true;
+        }
+    }
+}
 
 typedef struct {
     const char *name;
@@ -255,6 +268,9 @@ void keyboard_post_init_kb(void) {
 #endif
     qp_flush(lcd);
 
+    // Register split RPC transaction for display synchronization
+    transaction_register_rpc(RPC_ID_DISPLAY_SYNC, display_sync_slave_handler);
+
     keyboard_post_init_user();
 }
 
@@ -298,10 +314,11 @@ bool is_display_stealth_mode(void) {
     return display_stealth_mode;
 }
 
-void display_stealth_toggle(void) {
-    display_stealth_mode = !display_stealth_mode;
-    uprintf("TOGGLE STEALTH: new_state=%d\n", display_stealth_mode);
-    if (display_stealth_mode) {
+static void apply_display_stealth(bool stealth) {
+    if (lcd == NULL) {
+        return;
+    }
+    if (stealth) {
         // 1. Physically paint the entire screen black
         qp_rect(lcd, 0, 0, 127, 127, 0, 0, 0, true);
         qp_flush(lcd);
@@ -333,6 +350,21 @@ void display_stealth_toggle(void) {
         last_wpm        = 255;
         update_layer_card(get_highest_layer(layer_state | default_layer_state));
         qp_flush(lcd);
+    }
+}
+
+void display_stealth_toggle(void) {
+    display_stealth_mode = !display_stealth_mode;
+    uprintf("TOGGLE STEALTH: new_state=%d\n", display_stealth_mode);
+    apply_display_stealth(display_stealth_mode);
+
+    if (is_keyboard_master()) {
+        master_stealth_sync_needed = true;
+        bool ok = transaction_rpc_send(RPC_ID_DISPLAY_SYNC, sizeof(display_stealth_mode), &display_stealth_mode);
+        uprintf("RPC SEND STEALTH: ok=%d\n", ok);
+        if (ok) {
+            master_stealth_sync_needed = false;
+        }
     }
 }
 
@@ -383,6 +415,23 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 }
 
 void housekeeping_task_kb(void) {
+    // 1. Sync stealth state from master to slave
+    if (is_keyboard_master()) {
+        static uint32_t last_sync = 0;
+        if (master_stealth_sync_needed || timer_elapsed32(last_sync) > 500) {
+            if (transaction_rpc_send(RPC_ID_DISPLAY_SYNC, sizeof(display_stealth_mode), &display_stealth_mode)) {
+                master_stealth_sync_needed = false;
+                last_sync = timer_read32();
+            }
+        }
+    }
+
+    // 2. Apply stealth state on slave if changed via RPC
+    if (slave_stealth_dirty) {
+        slave_stealth_dirty = false;
+        apply_display_stealth(display_stealth_mode);
+    }
+
     if (lcd == NULL || font_sm == NULL || display_stealth_mode) {
         return;
     }
