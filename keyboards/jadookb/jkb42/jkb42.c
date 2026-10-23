@@ -369,13 +369,6 @@ void display_stealth_toggle(void) {
 }
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
-    uprintf("KEY: pr=%d r=%d c=%d kc=0x%04x L=%d\n",
-            record->event.pressed,
-            record->event.key.row,
-            record->event.key.col,
-            keycode,
-            get_highest_layer(layer_state));
-
     // Display stealth toggle strictly on OU_AUTO (slash key on Media layer)
     if (keycode == OU_AUTO) {
         if (record->event.pressed) {
