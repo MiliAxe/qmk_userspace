@@ -54,14 +54,14 @@ Unlike heavy GIF animations that consume excessive SPI bandwidth and cause dropp
    - **Idle**: Clean black background.
 3. **Dynamic Layer Card**:
    - Distinct colored borders and titles corresponding to each active Miryoku layer:
-     - **BASE**: Cyan
+     - **BASE**: Yellow
      - **EXTRA**: Light Blue
      - **TAP**: Pure White
      - **BUTTON**: Teal
      - **NAV**: Electric Purple
      - **MOUSE**: Magenta
      - **MEDIA**: Crimson Red
-     - **NUM**: Amber Gold
+     - **NUM**: Cyan
      - **SYM**: Bright Green
      - **FUN**: Tangerine Orange
 4. **Live Modifier Pills (`[ SFT ]  [ CTL ]  [ ALT ]  [ GUI ]`)**:

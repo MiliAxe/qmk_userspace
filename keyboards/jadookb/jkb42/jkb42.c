@@ -35,14 +35,14 @@ typedef struct {
 
 // Miryoku layer configuration
 static const layer_info_t layer_info[] = {
-    [0] = { "BASE",   128, 255, 255 }, // Cyan
+    [0] = { "BASE",    43, 255, 255 }, // Yellow
     [1] = { "EXTRA",  145, 220, 255 }, // Light Blue
     [2] = { "TAP",      0,   0, 255 }, // White
     [3] = { "BUTTON", 106, 255, 255 }, // Teal
     [4] = { "NAV",    191, 255, 255 }, // Purple
     [5] = { "MOUSE",  213, 255, 255 }, // Magenta
     [6] = { "MEDIA",    0, 255, 255 }, // Red
-    [7] = { "NUM",     32, 255, 255 }, // Amber / Gold
+    [7] = { "NUM",    128, 255, 255 }, // Cyan
     [8] = { "SYM",     85, 255, 255 }, // Green
     [9] = { "FUN",     21, 255, 255 }, // Orange
 };
