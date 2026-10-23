@@ -292,7 +292,40 @@ void caps_word_set_user(bool active) {
 }
 #endif
 
+static bool display_stealth_mode = false;
+
+bool is_display_stealth_mode(void) {
+    return display_stealth_mode;
+}
+
+void display_stealth_toggle(void) {
+    display_stealth_mode = !display_stealth_mode;
+    if (display_stealth_mode) {
+#if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
+        gpio_write_pin_low(LCD_BLK_PIN);
+#endif
+        qp_power(lcd, false);
+    } else {
+        qp_power(lcd, true);
+#if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
+        gpio_write_pin_high(LCD_BLK_PIN);
+#endif
+        draw_header();
+        last_layer      = 255;
+        last_lock_state = 255;
+        last_mods       = 255;
+        last_wpm        = 255;
+    }
+}
+
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
+    if (keycode == OU_AUTO) {
+        if (record->event.pressed) {
+            display_stealth_toggle();
+        }
+        return false;
+    }
+
     if (keycode == CW_TOGG) {
         if (record->event.pressed) {
             uint8_t mods = get_mods() | get_weak_mods();
@@ -324,7 +357,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 }
 
 void housekeeping_task_kb(void) {
-    if (lcd == NULL || font_sm == NULL) {
+    if (lcd == NULL || font_sm == NULL || display_stealth_mode) {
         return;
     }
 
@@ -438,10 +471,12 @@ void suspend_power_down_kb(void) {
 }
 
 void suspend_wakeup_init_kb(void) {
-    qp_power(lcd, true);
+    if (!display_stealth_mode) {
+        qp_power(lcd, true);
 #if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
-    gpio_write_pin_high(LCD_BLK_PIN);
+        gpio_write_pin_high(LCD_BLK_PIN);
 #endif
+    }
     rgb_matrix_set_suspend_state(false);
     suspend_wakeup_init_user();
 }

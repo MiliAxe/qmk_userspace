@@ -99,13 +99,14 @@ This build solves the dual-role dilemma using modern QMK algorithms:
 * **`FLOW_TAP_TERM 150`**:
   - When typing in a continuous flow (keystrokes closer than 150 ms apart), QMK automatically outputs letters at 0 ms latency without entering the hold evaluation queue.
 
-### Caps Lock & Caps Word Superpowers
+### Keyboard Superpowers & Quick Actions
 
 | Action | Result | Screen Indicator |
 | :--- | :--- | :--- |
 | **Tap `CW_TOGG` once** (Nav layer, key next to `L`) | **Caps Word** (auto-capitalizes until next space/symbol) | Amber `[WORD]` |
 | **Double-tap `CW_TOGG`** | **Full Caps Lock** | Red `[CAPS]` |
 | **Hold `Shift` + Tap `CW_TOGG`** | **Full Caps Lock** | Red `[CAPS]` |
+| **Hold Left Thumb (`Esc`) + Tap `N`** (Media layer) | **Persistent Stealth Display Toggle** (toggles screen & backlight completely OFF / ON) | Pitch Black / Full HUD |
 
 ---
 
