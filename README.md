@@ -17,7 +17,7 @@
 
 ---
 
-## 📺 Live Display: The Quantum Painter Cockpit HUD
+## Live Display: The Quantum Painter Cockpit HUD
 
 The keyboard features a 128×128 pixel ST7735 color TFT display driven via SPI using QMK's native **Quantum Painter** graphics engine.
 
@@ -27,7 +27,9 @@ Unlike heavy GIF animations that consume excessive SPI bandwidth and cause dropp
   <img src="assets/demo.gif" alt="Live Display HUD Demo" width="360" />
 </p>
 
-### Display Architecture (Option B Cockpit Strip)
+### Display Architecture & HUD Layout
+
+The display is partitioned into isolated, non-overlapping rendering zones to ensure zero-flicker updates and microsecond SPI refresh speeds. A dedicated 14px "Cockpit Strip" sits directly below the layer card, giving you physical-looking pill badges for all four modifiers:
 
 ```text
 +-----------------------------------+
@@ -37,7 +39,7 @@ Unlike heavy GIF animations that consume excessive SPI bandwidth and cause dropp
 |   |          LAYER 4          |   |  <-- Dynamic Layer Card (y: 28..72)
 |   |            NAV            |   |      (Color-coded per layer)
 |   +---------------------------+   |
-|  [ SFT ]  [ CTL ]  [ ALT ]  [ GUI]|  <-- Live Modifier Pills (y: 76..90)
+|  [ SFT ]  [ CTL ]  [ ALT ]  [ GUI]|  <-- Cockpit Modifier Strip (y: 76..90)
 |-----------------------------------|  <-- Separator Line (y: 94)
 | SPEED                     85 WPM  |  <-- Live WPM readout (y: 98)
 | [============               ]     |  <-- Color-graded progress bar (y: 113..123)
@@ -77,7 +79,7 @@ Unlike heavy GIF animations that consume excessive SPI bandwidth and cause dropp
 
 ---
 
-## ⚡ Miryoku Layout & Zero-Lag Home Row Mods
+## Miryoku Layout & Zero-Lag Home Row Mods
 
 This firmware runs the popular 36-key **Miryoku** layout mapped across the 42 physical keys (3x6_3) of the Corne/JKB42 footprint.
 
@@ -107,7 +109,29 @@ This build solves the dual-role dilemma using modern QMK algorithms:
 
 ---
 
-## 🛠️ Hardware Specifications
+## Compatibility & Benefits for Classic Corne (crkbd) Users
+
+Although tailored for the JKB42 hardware variant, this setup is fundamentally a **Corne (crkbd 3x6_3) layout**. If you use a classic Corne, you can directly benefit from the configurations in this repository:
+
+1. **Zero-Lag Home Row Mods for Any Corne**:
+   - The Home Row Mods tuning (`CHORDAL_HOLD`, `PERMISSIVE_HOLD`, and `FLOW_TAP_TERM 150`) maps cleanly to the Corne matrix geometry (Rows 0–2 Left, Rows 4–6 Right, Rows 3 & 7 Thumbs).
+   - Any Corne user running Miryoku can adopt these tap-hold settings from `config.h` and `jkb42.c` to eliminate typing hesitation and stutter during fast rolls.
+2. **Standard Corne Build Targets**:
+   - This userspace includes build support for classic Corne setups (`keyboards/crkbd`). You can compile for your Corne board:
+     ```bash
+     # Classic Corne v1-v3
+     qmk compile -kb crkbd/rev1 -km default
+
+     # Corne v4.1 / RP2040
+     qmk compile -kb crkbd/rev4_1/standard -km miryoku_split_3x6_3_ex2
+     ```
+3. **Display Engine Portability**:
+   - For Cornes equipped with color SPI LCDs (such as Corne v4 with TFT or custom ST7735/ST7789 mods), the entire Quantum Painter driver in `jkb42.c` can be ported directly for low-bandwidth, non-blocking rendering.
+   - For classic 128×32 / 128×64 OLED Cornes, the visual hierarchy (Layer card + Modifier pill badges + WPM gauge) provides a proven reference for an uncluttered, lag-free status display.
+
+---
+
+## Hardware Specifications
 
 | Component | Specification |
 | :--- | :--- |
@@ -121,7 +145,7 @@ This build solves the dual-role dilemma using modern QMK algorithms:
 
 ---
 
-## 🚀 Flashing Instructions
+## Flashing Instructions
 
 Pre-compiled firmware binaries are automatically built by GitHub Actions and available under [Releases](../../releases).
 
@@ -134,7 +158,7 @@ Pre-compiled firmware binaries are automatically built by GitHub Actions and ava
 
 ---
 
-## 💻 Building from Source
+## Building from Source
 
 ### Using QMK CLI (Local)
 
@@ -158,7 +182,7 @@ This repository includes [`.github/workflows/build_binaries.yaml`](.github/workf
 
 ---
 
-## ⚙️ Customization
+## Customization
 
 - **Change Display Title**: Edit `DISPLAY_HEADER_TEXT` in [`keyboards/jadookb/jkb42/config.h`](keyboards/jadookb/jkb42/config.h):
   ```c
@@ -172,7 +196,14 @@ This repository includes [`.github/workflows/build_binaries.yaml`](.github/workf
 
 ---
 
-## 📜 License
+## Acknowledgments & Credits
+
+- **[yehorb/qmk_userspace](https://github.com/yehorb/qmk_userspace)** — Heartfelt thanks to **Yehor** for the foundational `qmk_userspace` repository template, Miryoku build integration, and automated GitHub Actions CI workflow that powers this project.
+- **[manna-harbour/miryoku](https://github.com/manna-harbour/miryoku)** — Manna Harbour for the ergonomic Miryoku layout engine.
+- **[QMK Firmware](https://github.com/qmk/qmk_firmware)** — The open-source community powering custom mechanical keyboards everywhere.
+
+---
+
+## License
 
 This project is licensed under the **GPL v2.0 or later**, matching upstream QMK Firmware.
-Layout architecture based on [Miryoku](https://github.com/manna-harbour/miryoku) by Manna Harbour.
