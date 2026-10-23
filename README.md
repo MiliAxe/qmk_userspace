@@ -106,7 +106,7 @@ This build solves the dual-role dilemma using modern QMK algorithms:
 | **Tap `CW_TOGG` once** (Nav layer, key next to `L`) | **Caps Word** (auto-capitalizes until next space/symbol) | Amber `[WORD]` |
 | **Double-tap `CW_TOGG`** | **Full Caps Lock** | Red `[CAPS]` |
 | **Hold `Shift` + Tap `CW_TOGG`** | **Full Caps Lock** | Red `[CAPS]` |
-| **Hold Left Thumb (`Esc`) + Tap `N`** (Media layer) | **Persistent Stealth Display Toggle** (toggles screen & backlight completely OFF / ON) | Pitch Black / Full HUD |
+| **Hold Left Thumb (`Esc`) + Tap `/`** (Media layer) | **Persistent Stealth Display Toggle** (toggles screen & backlight completely OFF / ON) | Pitch Black / Full HUD |
 
 ---
 

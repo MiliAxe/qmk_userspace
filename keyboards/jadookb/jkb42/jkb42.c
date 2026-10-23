@@ -26,6 +26,7 @@ static uint8_t  last_lock_state = 255; // 0: None, 1: Caps Word, 2: Caps Lock
 static uint8_t  last_mods       = 255;
 static uint8_t  last_wpm        = 255;
 static uint32_t last_wpm_time   = 0;
+static bool     display_stealth_mode = false;
 
 typedef struct {
     const char *name;
@@ -259,7 +260,7 @@ void keyboard_post_init_kb(void) {
 
 layer_state_t layer_state_set_kb(layer_state_t state) {
     uint8_t next_layer = get_highest_layer(state | default_layer_state);
-    if (lcd != NULL && font_sm != NULL && next_layer != last_layer) {
+    if (!display_stealth_mode && lcd != NULL && font_sm != NULL && next_layer != last_layer) {
         last_layer = next_layer;
         update_layer_card(next_layer);
         qp_flush(lcd);
@@ -269,7 +270,7 @@ layer_state_t layer_state_set_kb(layer_state_t state) {
 
 layer_state_t default_layer_state_set_kb(layer_state_t state) {
     uint8_t next_layer = get_highest_layer(layer_state | state);
-    if (lcd != NULL && font_sm != NULL && next_layer != last_layer) {
+    if (!display_stealth_mode && lcd != NULL && font_sm != NULL && next_layer != last_layer) {
         last_layer = next_layer;
         update_layer_card(next_layer);
         qp_flush(lcd);
@@ -285,15 +286,13 @@ void caps_word_set_user(bool active) {
     } else if (active) {
         current_lock = 1;
     }
-    if (lcd != NULL && font_sm != NULL && current_lock != last_lock_state) {
+    if (!display_stealth_mode && lcd != NULL && font_sm != NULL && current_lock != last_lock_state) {
         last_lock_state = current_lock;
         update_lock_indicator(current_lock);
         qp_flush(lcd);
     }
 }
 #endif
-
-static bool display_stealth_mode = false;
 
 bool is_display_stealth_mode(void) {
     return display_stealth_mode;
@@ -345,8 +344,8 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             keycode,
             get_highest_layer(layer_state));
 
-    // Display toggle on OU_AUTO (slash key) OR physical N key (row 6, col 5) while on Media layer
-    if (keycode == OU_AUTO || (record->event.key.row == 6 && record->event.key.col == 5 && get_highest_layer(layer_state) == 6)) {
+    // Display stealth toggle strictly on OU_AUTO (slash key on Media layer)
+    if (keycode == OU_AUTO) {
         if (record->event.pressed) {
             display_stealth_toggle();
         }
