@@ -329,29 +329,47 @@ void housekeeping_task_kb(void) {
     }
 
 #if defined(QUANTUM_PAINTER_DISPLAY_TIMEOUT) && (QUANTUM_PAINTER_DISPLAY_TIMEOUT > 0)
-    bool is_idle = last_input_activity_elapsed() >= QUANTUM_PAINTER_DISPLAY_TIMEOUT;
-    static bool display_is_sleeping = false;
+    uint32_t idle_time = last_input_activity_elapsed();
+    static bool stage1_dimmed = false;
+    static bool stage2_off    = false;
 
-    if (is_idle && !display_is_sleeping) {
-        display_is_sleeping = true;
-#    if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
-        gpio_write_pin_low(LCD_BLK_PIN);
+#    if defined(DISPLAY_OFF_TIMEOUT) && (DISPLAY_OFF_TIMEOUT > 0)
+    // Stage 2: Deep Sleep (backlight completely cuts off after long timeout)
+    if (idle_time >= DISPLAY_OFF_TIMEOUT) {
+        if (!stage2_off) {
+            stage2_off = true;
+#        if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
+            gpio_write_pin_low(LCD_BLK_PIN);
+#        endif
+        }
+        return;
+    }
+
+    // Waking up from Stage 2
+    if (stage2_off) {
+        stage2_off = false;
+#        if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
+            gpio_write_pin_high(LCD_BLK_PIN);
+#        endif
+        stage1_dimmed = true; // force full repaint on wake
+    }
 #    endif
-    } else if (!is_idle && display_is_sleeping) {
-        display_is_sleeping = false;
-#    if defined(LCD_BLK_PIN) && LCD_BLK_PIN != -1
-        gpio_write_pin_high(LCD_BLK_PIN);
-#    endif
-        // Invalidate cached states to force full screen refresh on wake
+
+    // Stage 1: Soft Standby (screen pixels sleep, ambient backlight remains on)
+    if (idle_time >= QUANTUM_PAINTER_DISPLAY_TIMEOUT) {
+        stage1_dimmed = true;
+        return; // qp_internal already puts ST7735 controller in low-power sleep
+    }
+
+    // Waking up from Stage 1
+    if (stage1_dimmed) {
+        stage1_dimmed = false;
+        // Invalidate cached states to force full screen repaint
         draw_header();
         last_layer      = 255;
         last_lock_state = 255;
         last_mods       = 255;
         last_wpm        = 255;
-    }
-
-    if (display_is_sleeping) {
-        return;
     }
 #endif
 

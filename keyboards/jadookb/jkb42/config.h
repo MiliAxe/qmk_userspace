@@ -40,8 +40,10 @@
 #define QUANTUM_PAINTER_NUM_FONTS 4
 
 // Timeout configuration
-#define QUANTUM_PAINTER_DISPLAY_TIMEOUT 120000
-#define LIGHTS_TIMEOUT QUANTUM_PAINTER_DISPLAY_TIMEOUT
+#define DISPLAY_DIM_TIMEOUT 120000   // 2 minutes: Soft standby (screen off, ambient backlight)
+#define DISPLAY_OFF_TIMEOUT 900000   // 15 minutes: Deep sleep (backlight completely cuts off)
+#define QUANTUM_PAINTER_DISPLAY_TIMEOUT DISPLAY_DIM_TIMEOUT
+#define LIGHTS_TIMEOUT DISPLAY_DIM_TIMEOUT
 
 // Display Customization
 #ifndef DISPLAY_HEADER_TEXT
